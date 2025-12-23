@@ -1,0 +1,239 @@
+# ⚡ GUÍA DE INICIO RÁPIDO
+
+## 5 MINUTOS PARA EMPEZAR
+
+### PASO 1: Instalación (2 min)
+```
+Windows: double-click en install.bat
+Mac/Linux: bash install.sh
+```
+
+### PASO 2: Activar entorno (30 seg)
+```
+Windows: venv\Scripts\activate.bat
+Mac/Linux: source venv/bin/activate
+```
+
+### PASO 3: Ejecutar programa (30 seg)
+```
+streamlit run dashboard_residuos.py
+```
+
+### PASO 4: Se abre navegador en http://localhost:8501
+
+### PASO 5: Cargar datos (1 min)
+1. Sidebar izquierdo → "Carga de Datos"
+2. Click en "Selecciona archivo CSV o Excel"
+3. Cargar datos_ejemplo.csv O tu archivo
+4. ¡Explorar!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## ESTRUCTURA DE TUS DATOS
+
+Tu archivo CSV necesita tener estas columnas (en cualquier orden):
+
+```
+Marca temporal                              | datetime | 12/01/2025 08:00:00
+1. USUARIO                                 | string   | MARIA GARCIA
+2. ÁREA                                    | string   | ODONTOLOGIA E HIGIENE ORAL
+3. TIPO DE RESIDUOS                        | string   | BIOSANITARIOS
+COLOR DEL RECIPIENTE                       | string   | ROJO
+Columna 12 (Estado)                        | string   | MEDIO (25% - 75%)
+Columna 13 (Observaciones)                 | string   | DERRAME
+```
+
+### Delimitador: `;` (punto y coma)
+### Encoding: UTF-8
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## CÓMO CREAR TU ARCHIVO CSV
+
+### En Google Sheets:
+1. Crear hoja de cálculo
+2. Llenar columnas con datos
+3. Descargar: Archivo → Descargar → CSV (Delimitado por comas)
+4. Abrir con editor de texto
+5. Reemplazar todas las comas por punto-coma (Ctrl+H)
+6. Guardar
+
+### En Excel:
+1. Crear archivo
+2. Asegurarse delimitador sea `;`
+3. Guardar como CSV UTF-8
+4. (O exportar como CSV desde el dropdown)
+
+### En LibreOffice:
+1. Crear documento
+2. Guardar como: Formato CSV
+3. Seleccionar delimitador `;`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## NAVEGACIÓN POR PESTAÑAS
+
+### 📊 Vista General
+- Métricas clave resumidas
+- Gráficos de distribución
+- Timeline de registros
+- Ideal para: Presentaciones ejecutivas
+
+### ♻️ Análisis Residuos
+- Tabla detallada de tipos
+- Gráficos de correlación
+- Residuos peligrosos destacados
+- Ideal para: Audit de segregación
+
+### 📍 Por Área
+- Estadísticas por zona operativa
+- Usuarios asignados
+- Distribución de carga
+- Ideal para: Gestión de áreas
+
+### ⚠️ Incidentes
+- Alertas de problemas
+- Plan de acción inmediata
+- Tabla de detalle
+- Ideal para: Gestión de riesgos
+
+### 🔮 Predicciones QR
+- Impacto del sistema QR propuesto
+- Precisión de clasificación
+- Especificaciones técnicas
+- Ideal para: Justificar inversión
+
+### 📈 Comparativas
+- Análisis cross-funcional
+- Heatmaps de correlación
+- Evolución temporal
+- Ideal para: Análisis profundo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## USAR FILTROS
+
+### En el Sidebar:
+1. Selecciona "Filtrar por Área"
+2. Marca/desmarca áreas deseadas
+3. Selecciona "Filtrar por Tipo de Residuo"
+4. Marca/desmarca tipos
+5. Todos los gráficos se actualizan automáticamente
+
+Tip: Desselecciona "Seleccionar todo" primero → Luego selecciona solo lo que quieras
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## DESCARGAR DATOS
+
+### Opción 1: CSV (Datos Filtrados)
+1. Sidebar → Exportar → "Descargar CSV"
+2. Se descarga con filtros aplicados
+3. Listo para usar en Excel
+
+### Opción 2: Reporte TXT
+1. Sidebar → Exportar → "Descargar Reporte"
+2. Incluye análisis completo
+3. Formato texto para impresión
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## INTERACTUAR CON GRÁFICOS
+
+Todos los gráficos son interactivos (Plotly):
+
+✓ Hover: Ver detalles exactos
+✓ Click: Mostrar/ocultar categorías
+✓ Zoom: Arrastra para zoom (luego doble-click para reset)
+✓ Pan: Mantén Shift + arrastra para mover
+✓ Download: Botón de cámara en la esquina
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## CASOS DE USO COMUNES
+
+### Caso 1: Auditoría de Segregación
+1. Pestaña "Incidentes"
+2. Ver "Residuo Mal Segregado"
+3. Descargar reporte
+4. Enviar a equipo de capacitación
+
+### Caso 2: Justificar Inversión QR
+1. Pestaña "Predicciones QR"
+2. Mostrar gráfico "Impacto Proyectado"
+3. Presentar ROI en 6 meses
+4. Compartir especificaciones técnicas
+
+### Caso 3: Identificar Áreas de Riesgo
+1. Pestaña "Comparativas"
+2. Ver scatter: Usuarios vs Incidentes
+3. Identificar outliers (alto riesgo)
+4. Capacitar personal específico
+
+### Caso 4: Monitorear Tendencias
+1. Pestaña "Vista General"
+2. Ver gráfico temporal
+3. Notar picos de generación
+4. Ajustar recolección
+
+### Caso 5: Preparar Reunión Directiva
+1. Exportar datos como CSV
+2. Generar reporte TXT
+3. Hacer captura de pantalla de métricas
+4. Presentar datos en reunión
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## SOLUCIÓN DE PROBLEMAS
+
+### ❌ "No data to display"
+→ Carga datos primero en Sidebar
+
+### ❌ "Error: file not found"
+→ CSV debe estar en misma carpeta o ruta completa
+
+### ❌ Caracteres extraños en datos
+→ Asegura encoding UTF-8 en CSV
+
+### ❌ Gráficos lentos
+→ Filtra datos primero (selecciona menos registros)
+
+### ❌ "No space left on device"
+→ Algunos archivos muy grandes. Usar Excel para procesar primero
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## ATAJOS TECLADO
+
+Streamlit:
+- Ctrl+C: Detener programa
+- R: Recargar
+- Ctrl+Shift+R: Hard refresh
+
+Navegador:
+- F5: Refresh página
+- Ctrl+Shift+J: Abrir console (debugging)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## PRÓXIMOS PASOS
+
+1. ✅ Instalar y ejecutar
+2. ✅ Cargar datos ejemplo
+3. ✅ Explorar cada pestaña
+4. ✅ Descargar reportes
+5. ⏭️ Cargar datos reales
+6. ⏭️ Ajustar filtros según necesidad
+7. ⏭️ Generar reportes periódicos
+8. ⏭️ Compartir con equipo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿NECESITAS AYUDA?
+
+- Lee README.md para instrucciones detalladas
+- Lee EXTENSION_GUIDE.md para agregar funcionalidades
+- Revisa archivos comentados en dashboard_residuos.py
+- Contacta a equipo de TI
+
+¡Que disfrutes usando el sistema! 🚀
