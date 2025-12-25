@@ -15,8 +15,6 @@ from plotly.subplots import make_subplots
 import seaborn as sns
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
-from sklearn.preprocessing import LabelEncoder
-from sklearn.ensemble import RandomForestClassifier
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -74,8 +72,6 @@ if 'df_original' not in st.session_state:
     st.session_state.df_original = None
 if 'df_processed' not in st.session_state:
     st.session_state.df_processed = None
-if 'modelo_prediccion' not in st.session_state:
-    st.session_state.modelo_prediccion = None
 
 # ============================================================================
 # FUNCIONES AUXILIARES
@@ -127,6 +123,8 @@ def procesar_datos(df):
     df['estado_recipiente'] = df['estado_recipiente'].fillna('NO REGISTRADO')
     df['estado_recipiente'] = df['estado_recipiente'].replace({
         'VACIO (<25%)': 'VACÍO',
+        'VACIO  (<25%)': 'VACÍO',
+        'VACÍO (<25%)': 'VACÍO',
         'MEDIO (25% - 75%)': 'MEDIO',
         'LLENO (>75%)': 'LLENO'
     })
@@ -156,9 +154,8 @@ def calcular_metricas(df):
     }
 
 def crear_prediccion_qr(df):
-    """Modelo predictivo simple para sugerir recipiente y detección de anomalías"""
+    """Modelo predictivo simple para sugerir recipiente"""
     try:
-        # Mapeo tipo de residuo -> recipiente recomendado
         mapeo_recipiente = {
             'BIOSANITARIOS': 'ROJO',
             'ANATOMOPATOLOGICOS': 'ROJO',
@@ -169,16 +166,14 @@ def crear_prediccion_qr(df):
             'RESIDUOS NO APROVECHABLES': 'NEGRO'
         }
 
-        # Aplicar predicción
         df['recipiente_predicho'] = df['tipo_residuo'].map(mapeo_recipiente).fillna('REVISAR')
         df['es_incorrecto'] = (df['color_recipiente'].str.upper() != df['recipiente_predicho'].str.upper())
-
         return df
     except:
         return df
 
 def generar_reporte_pdf(df, metricas):
-    """Genera reporte en formato texto para descarga"""
+    """Genera reporte en formato texto"""
     reporte = f"""
 REPORTE DE ANÁLISIS - GESTIÓN DE RESIDUOS HOSPITALARIOS
 ESE Centro de Salud San Juan de Dios - Pital, Huila
@@ -191,45 +186,16 @@ Total de Registros: {metricas['total']}
 Usuarios Activos: {metricas['usuarios']}
 Áreas Monitoreadas: {metricas['areas']}
 Incidentes Detectados: {metricas['incidentes']} ({metricas['incidentes_pct']:.2f}%)
-Residuos Biosanitarios: {metricas['biosanitarios']} ({metricas['biosanitarios']/metricas['total']*100:.2f}%)
-Residuos Químicos: {metricas['quimicos']} ({metricas['quimicos']/metricas['total']*100:.2f}%)
-
-ANÁLISIS DETALLADO
-{'-'*80}
-Distribución por Tipo de Residuo:
-{df['tipo_residuo'].value_counts().to_string()}
-
-Distribución por Área:
-{df['area'].value_counts().to_string()}
-
-Incidentes Registrados:
-{df[df['incidente'] != 'NO']['incidente'].value_counts().to_string()}
-
-Estado de Recipientes:
-{df['estado_recipiente'].value_counts().to_string()}
+Residuos Biosanitarios: {metricas['biosanitarios']}
+Residuos Químicos: {metricas['quimicos']}
 
 RECOMENDACIONES
 {'-'*80}
 1. SEGREGACIÓN: Implementar validación QR pre-depósito (reducción esperada: 85%)
-2. CAPACITACIÓN: Reforzar clasificación en Odontología (78.75% de registros)
-3. CORTOPUNZANTES: 100% en contenedores GUARDIAN con protocolo bioseguridad
+2. CAPACITACIÓN: Reforzar clasificación en Odontología
+3. CORTOPUNZANTES: 100% en contenedores GUARDIAN
 4. MONITOREO: Auditorías semanales de segregación
 5. RECIPIENTES: Garantizar disponibilidad permanente de bolsas
-
-PROPUESTA QR SEMIAUTOMATIZADA
-{'-'*80}
-✓ Cada contenedor con código QR personalizado
-✓ Validación automática: tipo residuo + peso + recipiente
-✓ Alerta si > 75% llenado
-✓ Historial trazable por contenedor
-✓ Predicción de recolección necesaria
-
-IMPACTO ESTIMADO
-{'-'*80}
-Reducción de incidentes de segregación: 85%
-Aumento de precisión clasificación: +27%
-Optimización rutas recolección: 15-20%
-Cumplimiento normativo: 98%
 """
     return reporte
 
@@ -250,7 +216,6 @@ st.markdown("""
 with st.sidebar:
     st.header("📁 Carga de Datos")
 
-    # Opción 1: Cargar archivo
     uploaded_file = st.file_uploader(
         "Selecciona archivo CSV o Excel",
         type=['csv', 'xlsx', 'xls'],
@@ -453,39 +418,60 @@ if df is not None and len(df) > 0:
         # Gráficos comparativos
         col1, col2 = st.columns(2)
 
+        # Distribución de residuos por área (Sunburst)
         with col1:
-            # Sunburst: Residuo -> Area
-            residuo_area = df.groupby(['tipo_residuo', 'area']).size().reset_index(name='cantidad')
-            fig_sun = px.sunburst(
-                residuo_area,
-                labels='cantidad',
-                parents=['tipo_residuo'],
-                ids='area',
-                values='cantidad',
-                title="Residuos por Área (Sunburst)"
+            st.subheader("Residuos por Área y Tipo")
+
+            residuo_area = (
+                df.groupby(["area", "tipo_residuo"])
+                .size()
+                .reset_index(name="cantidad")
             )
-            st.plotly_chart(fig_sun, use_container_width=True)
+
+            residuo_area = residuo_area.dropna(subset=["area", "tipo_residuo"])
+
+            if len(residuo_area) > 0:
+                fig_sun = px.sunburst(
+                    residuo_area,
+                    path=["area", "tipo_residuo"],
+                    values="cantidad",
+                    color="area",
+                    color_discrete_sequence=px.colors.qualitative.Set3,
+                    title="Residuos por Área (Sunburst)"
+                )
+                st.plotly_chart(fig_sun, use_container_width=True)
+            else:
+                st.info("No hay datos suficientes para el gráfico sunburst.")
 
         with col2:
-            # Heatmap: Residuo x Incidente
-            incidente_residuo = pd.crosstab(df['tipo_residuo'], df['incidente'])
-            fig_heat = go.Figure(data=go.Heatmap(
-                z=incidente_residuo.values,
-                x=incidente_residuo.columns,
-                y=incidente_residuo.index,
-                colorscale='YlOrRd'
-            ))
-            fig_heat.update_layout(
-                title="Matriz: Tipo Residuo vs Incidente",
-                height=400
-            )
-            st.plotly_chart(fig_heat, use_container_width=True)
+            st.subheader("Tipo de Residuo vs Incidente")
+            if df is not None and len(df) > 0:
+                incidente_residuo = pd.crosstab(df['tipo_residuo'], df['incidente'])
+
+                if incidente_residuo.size > 0:
+                    fig_heat = go.Figure(data=go.Heatmap(
+                        z=incidente_residuo.values,
+                        x=incidente_residuo.columns,
+                        y=incidente_residuo.index,
+                        colorscale='YlOrRd'
+                    ))
+                    fig_heat.update_layout(
+                        title="Matriz: Tipo Residuo vs Incidente",
+                        height=400
+                    )
+                    st.plotly_chart(fig_heat, use_container_width=True)
+                else:
+                    st.info("No hay datos suficientes para la matriz de incidentes.")
 
         st.markdown("---")
 
         # Top residuos peligrosos
         st.subheader("🚨 Residuos Peligrosos Detectados")
-        peligrosos = df[df['tipo_residuo'].isin(['CORTOPUNZANTES', 'RESIDUOS QUIMICOS DE LABORATORIO CLINICO', 'RESIDUOS QUIMICOS DE ODONTOLOGIA E HIGIENE ORAL'])]
+        peligrosos = df[df['tipo_residuo'].isin([
+            'CORTOPUNZANTES',
+            'RESIDUOS QUIMICOS DE LABORATORIO CLINICO',
+            'RESIDUOS QUIMICOS DE ODONTOLOGIA E HIGIENE ORAL'
+        ])]
 
         if len(peligrosos) > 0:
             peligrosos_tabla = peligrosos.groupby('tipo_residuo').size().reset_index(name='cantidad')
@@ -495,10 +481,12 @@ if df is not None and len(df) > 0:
                 y='tipo_residuo',
                 orientation='h',
                 color='cantidad',
-                colorscale='Reds',
                 title="Residuos Peligrosos (Cortopunzantes y Químicos)"
             )
+            fig_peligrosos.update_traces(textposition='outside')
             st.plotly_chart(fig_peligrosos, use_container_width=True)
+        else:
+            st.info("No hay residuos peligrosos registrados.")
 
     # ========== TAB 3: POR ÁREA ==========
     with tab3:
@@ -507,7 +495,6 @@ if df is not None and len(df) > 0:
         col1, col2 = st.columns(2)
 
         with col1:
-            # Tabla por área
             area_tabla = df.groupby('area').agg({
                 'area': 'count',
                 'usuario': 'nunique',
@@ -521,7 +508,6 @@ if df is not None and len(df) > 0:
             st.dataframe(area_tabla, use_container_width=True)
 
         with col2:
-            # Gráfico circular
             area_counts = df['area'].value_counts()
             fig_area = px.pie(
                 values=area_counts.values,
@@ -532,7 +518,6 @@ if df is not None and len(df) > 0:
 
         st.markdown("---")
 
-        # Usuarios por área
         st.subheader("👥 Personal por Área")
         for area in df['area'].dropna().unique():
             usuarios = df[df['area'] == area]['usuario'].unique()
@@ -549,7 +534,6 @@ if df is not None and len(df) > 0:
         incidentes_df = df[df['incidente'] != 'NO'].copy()
 
         if len(incidentes_df) > 0:
-            # Alerta
             st.markdown(f"""
             <div class="alert-danger">
                 <strong>⚠️ ALERTA:</strong> Se detectaron {len(incidentes_df)} incidentes ({metricas['incidentes_pct']:.1f}% de registros)
@@ -559,59 +543,31 @@ if df is not None and len(df) > 0:
             col1, col2 = st.columns(2)
 
             with col1:
-                # Tabla incidentes
                 incidentes_tabla = incidentes_df['incidente'].value_counts().reset_index()
                 incidentes_tabla.columns = ['Tipo Incidente', 'Cantidad']
                 incidentes_tabla['% Total'] = (incidentes_tabla['Cantidad'] / len(incidentes_df) * 100).round(2)
                 st.dataframe(incidentes_tabla, use_container_width=True)
 
             with col2:
-                # Gráfico
-                fig_inc = px.bar(
-                    incidentes_tabla,
-                    x='Cantidad',
-                    y='Tipo Incidente',
-                    orientation='h',
-                    color='Cantidad',
-                    colorscale='Reds',
-                    title="Tipos de Incidentes"
-                )
-                st.plotly_chart(fig_inc, use_container_width=True)
+                if len(incidentes_tabla) > 0:
+                    fig_inc = px.bar(
+                        incidentes_tabla,
+                        x='Cantidad',
+                        y='Tipo Incidente',
+                        orientation='h',
+                        color='Cantidad',
+                        title="Tipos de Incidentes"
+                    )
+                    fig_inc.update_traces(textposition='outside')
+                    fig_inc.update_layout(showlegend=False, height=400)
+                    st.plotly_chart(fig_inc, use_container_width=True)
 
             st.markdown("---")
 
-            # Tabla detallada de incidentes
             st.subheader("📋 Detalle de Incidentes")
             incidentes_detalle = incidentes_df[['timestamp', 'usuario', 'area', 'tipo_residuo', 'incidente', 'observaciones']].sort_values('timestamp', ascending=False)
             st.dataframe(incidentes_detalle, use_container_width=True, hide_index=True)
 
-            # Recomendaciones por tipo
-            st.markdown("---")
-            st.subheader("🎯 Plan de Acción Inmediata")
-
-            for inc_type in incidentes_tabla['Tipo Incidente']:
-                cantidad = incidentes_tabla[incidentes_tabla['Tipo Incidente'] == inc_type]['Cantidad'].values[0]
-                pct = incidentes_tabla[incidentes_tabla['Tipo Incidente'] == inc_type]['% Total'].values[0]
-
-                if inc_type == 'SEGREGACIÓN':
-                    st.markdown(f"""
-                    <div class="alert-warning">
-                        <strong>1. SEGREGACIÓN INCORRECTA ({cantidad} incidentes, {pct}%)</strong><br>
-                        • Implementar validación QR pre-depósito<br>
-                        • Capacitación urgente en clasificación<br>
-                        • Señalización visual en cada punto<br>
-                        • Auditorías semanales
-                    </div>
-                    """, unsafe_allow_html=True)
-                elif inc_type == 'FALTA BOLSA':
-                    st.markdown(f"""
-                    <div class="alert-warning">
-                        <strong>2. FALTA DE BOLSA ({cantidad} incidentes, {pct}%)</strong><br>
-                        • Garantizar stock permanente<br>
-                        • Reporte automático de niveles bajos<br>
-                        • Responsable por área
-                    </div>
-                    """, unsafe_allow_html=True)
         else:
             st.success("✓ No hay incidentes registrados en el período actual")
 
@@ -622,51 +578,50 @@ if df is not None and len(df) > 0:
         st.markdown("""
         <div class="alert-success">
             <strong>✓ PROPUESTA: Clasificación Semiautomatizada con QR</strong><br>
-            Cada contenedor con código QR personalizado para validación automática de tipo residuo y peso
+            Cada contenedor con código QR personalizado para validación automática
         </div>
         """, unsafe_allow_html=True)
 
-        # Predicciones básicas
         col1, col2, col3 = st.columns(3)
 
         with col1:
             predicciones_correctas = (df['es_incorrecto'] == False).sum()
-            pct_correcto = (predicciones_correctas / len(df) * 100)
-            st.metric("Precisión Actual", f"{pct_correcto:.1f}%", delta="+0.0%")
+            pct_correcto = (predicciones_correctas / len(df) * 100) if len(df) > 0 else 0
+            st.metric("Precisión Actual", f"{pct_correcto:.1f}%")
 
         with col2:
             proyectado_30d = len(df) * 3
-            st.metric("Registros (30 días)", f"{proyectado_30d}", delta=f"+{proyectado_30d}")
+            st.metric("Registros (30 días)", f"{proyectado_30d}")
 
         with col3:
             incidentes_proyectados = int((len(df) * 3) * (metricas['incidentes_pct'] / 100))
-            st.metric("Incidentes Proyectados", f"{incidentes_proyectados}", delta=f"+{incidentes_proyectados}")
+            st.metric("Incidentes Proyectados", f"{incidentes_proyectados}")
 
         st.markdown("---")
 
-        # Matriz de confusión predicción
         st.subheader("📊 Análisis de Precisión QR")
 
         col1, col2 = st.columns(2)
 
         with col1:
-            # Qué recipientes se están usando incorrectamente
             incorrectos = df[df['es_incorrecto'] == True]
             if len(incorrectos) > 0:
+                confusion_data = incorrectos.groupby(['tipo_residuo', 'color_recipiente']).size().reset_index(name='cantidad')
                 fig_confusion = px.bar(
-                    incorrectos.groupby(['tipo_residuo', 'color_recipiente']).size().reset_index(name='cantidad'),
+                    confusion_data,
                     x='cantidad',
                     y='tipo_residuo',
                     color='color_recipiente',
                     orientation='h',
-                    title="Clasificaciones Incorrectas (Tipo Residuo vs Color Usado)"
+                    title="Clasificaciones Incorrectas"
                 )
                 st.plotly_chart(fig_confusion, use_container_width=True)
+            else:
+                st.info("No hay clasificaciones incorrectas registradas.")
 
         with col2:
-            # Impacto del sistema QR
             metricas_qr = {
-                'Métrica': ['Segregación Incorrecta', 'Recipientes Llenos >75%', 'Precisión', 'Cumplimiento Normativo'],
+                'Métrica': ['Segregación Incorrecta', 'Recipientes >75%', 'Precisión', 'Cumplimiento'],
                 'Actual': [metricas['incidentes_pct'], 12.5, pct_correcto, 71.25],
                 'Con QR': [2.5, 4.0, 98.0, 98.0]
             }
@@ -681,36 +636,6 @@ if df is not None and len(df) > 0:
                 height=400
             )
             st.plotly_chart(fig_impacto, use_container_width=True)
-
-        st.markdown("---")
-
-        # Recomendaciones QR
-        st.subheader("🔧 Especificaciones Técnicas del Sistema QR")
-
-        st.markdown("""
-        **1. HARDWARE**
-        - Dispensadores QR en cada punto de generación de residuos
-        - Lectores QR portátiles para personal
-        - Impresoras para códigos personalizados por contenedor
-
-        **2. SOFTWARE**
-        - Base de datos: Contenedor ID → Tipo residuo → Capacidad máxima
-        - Validación: Tipo residuo + Peso actual → Volumen disponible
-        - Alertas: Si ocupación > 75%, generar orden de recolección
-        - Historial: Registro completo de cada contenedor
-
-        **3. LÓGICA DE REGLAS (Sin ML complejo)**
-        - IF tipo_residuo = CORTOPUNZANTES THEN recipiente_obligatorio = GUARDIAN
-        - IF ocupacion > 75% THEN alerta_recoleccion = TRUE
-        - IF tipo_residuo != recipiente_esperado THEN flag_segregacion = INCORRECTO
-        - IF peso > capacidad_max THEN alerta_peligro = TRUE
-
-        **4. IMPACTO ESTIMADO**
-        - ✓ Reducción incidentes segregación: 85%
-        - ✓ Optimización rutas recolección: 15-20%
-        - ✓ Cumplimiento normativo: +27%
-        - ✓ ROI esperado: 6 meses
-        """)
 
     # ========== TAB 6: COMPARATIVAS ==========
     with tab6:
@@ -758,7 +683,6 @@ if df is not None and len(df) > 0:
 
         st.subheader("3️⃣ Análisis Temporal Avanzado")
 
-        # Evolución diaria
         diaria = df.groupby('fecha').agg({
             'area': 'count',
             'incidente': lambda x: (x != 'NO').sum()
@@ -767,12 +691,12 @@ if df is not None and len(df) > 0:
 
         fig_evo = make_subplots(specs=[[{"secondary_y": True}]])
         fig_evo.add_trace(
-            go.Scatter(x=diaria.index, y=diaria['total_registros'], name="Total Registros", 
+            go.Scatter(x=diaria.index, y=diaria['total_registros'], name="Total Registros",
                       line=dict(color='#2180a8')),
             secondary_y=False
         )
         fig_evo.add_trace(
-            go.Scatter(x=diaria.index, y=diaria['% incidentes'], name="% Incidentes", 
+            go.Scatter(x=diaria.index, y=diaria['% incidentes'], name="% Incidentes",
                       line=dict(color='#c0152f'), mode='lines+markers'),
             secondary_y=True
         )
